@@ -105,8 +105,8 @@ onMounted(() => {
   padding: 15px;
   border-radius: 10px;
   border: 1px solid #cccccc;
-  bottom: 12px;
-  left: -50px;
+  bottom: 50px;
+  left: -30px;
   min-width: 280px;
 }
 .ol-popup:after,
