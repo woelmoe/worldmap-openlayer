@@ -1,10 +1,10 @@
 import { Feature } from 'ol'
 import { Point } from 'ol/geom'
 import { Icon, Style } from 'ol/style.js'
-
+import imgUrl from '@/assets/icons/point.svg'
 export class IconPointer {
   iconFeature
-  
+
   constructor(coordX: number, coordY: number) {
     this.iconFeature = new Feature({
       geometry: new Point([coordX, coordY]),
@@ -15,11 +15,11 @@ export class IconPointer {
 
     const iconStyle = new Style({
       image: new Icon({
-        anchor: [0, 0],
-        anchorXUnits: 'fraction',
+        anchor: [450, 850],
+        anchorXUnits: 'pixels',
         anchorYUnits: 'pixels',
         width: 50,
-        src: 'src/assets/icons/point.svg'
+        src: imgUrl
       })
     })
 

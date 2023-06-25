@@ -66,7 +66,9 @@ button:focus-visible {
 
 #map {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 100%;
 }
 
 @media (prefers-color-scheme: light) {

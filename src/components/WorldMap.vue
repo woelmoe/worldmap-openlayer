@@ -1,6 +1,9 @@
 <template>
   <div id="map" class="map">
-    <div id="popup" class="ol-popup">{{ popupTitle }}</div>
+    <div id="popup" class="ol-popup">
+      <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+      {{ popupTitle }}
+    </div>
     <a href="#" id="popup-closer" class="ol-popup-closer"></a>
   </div>
 </template>
@@ -29,6 +32,8 @@ const tileLayer = ref()
 const map = ref()
 function createPopupFeature() {
   const container = document.getElementById('popup')
+  const closer = document.getElementById('popup-closer')
+
   popup.value = new Overlay({
     element: container as any,
     autoPan: {
@@ -37,6 +42,13 @@ function createPopupFeature() {
       }
     }
   })
+
+  if (closer)
+    closer.onclick = function () {
+      popup.value.setPosition(undefined)
+      closer.blur()
+      return false
+    }
 }
 function respawnLayers() {
   const vectorSource = new VectorSource({
@@ -54,7 +66,9 @@ function initMap() {
   createPopupFeature()
   respawnLayers()
   tileLayer.value = new TileLayer({
-    source: new OSM()
+    source: new OSM({
+      attributions: null as any
+    })
   })
   map.value = new Map({
     layers: [tileLayer.value, iconLayer.value],
