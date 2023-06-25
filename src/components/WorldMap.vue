@@ -10,19 +10,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref, nextTick } from 'vue'
+import { onMounted, ref } from 'vue'
 
 import Map from 'ol/Map.js'
 import View from 'ol/View.js'
-import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js'
+import { Tile as TileLayer } from 'ol/layer.js'
 import OSM from 'ol/source/OSM.js'
 import MapBrowserEvent from 'ol/MapBrowserEvent'
 import Overlay from 'ol/Overlay'
 import { toStringHDMS } from 'ol/coordinate'
 import { toLonLat } from 'ol/proj'
 import { IconPointer } from '../use/useIconPointer'
-import { Feature } from 'ol'
-import Layer from 'ol/layer/Layer'
 
 import ContextMenu from '@/components/ContextMenu.vue'
 
@@ -60,7 +58,6 @@ function clearPointers() {
   closePopup()
   if (!map.value) return
   removableLayersArray.forEach((uid: any) => {
-    console.log(uid)
     const layerToRemove = map.value
       ?.getAllLayers()
       .find((item: any) => item.ol_uid === uid)
