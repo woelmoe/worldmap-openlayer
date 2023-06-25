@@ -1,5 +1,7 @@
 <template>
-  <div id="map" class="map"></div>
+  <div id="map" class="map">
+    <div id="popup">234234</div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -13,8 +15,36 @@ import View from 'ol/View.js'
 import { Icon, Style } from 'ol/style.js'
 import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js'
 import OSM from 'ol/source/OSM.js'
+import MapBrowserEvent from 'ol/MapBrowserEvent'
+import Overlay from 'ol/Overlay'
 
 function initMap() {
+  const mapElement = document.getElementById('map')
+  if (!mapElement) return
+
+  const container = document.getElementById('popup')
+  const closer = document.getElementById('popup-closer')
+
+  /**
+   * Create an overlay to anchor the popup to the map.
+   */
+  const popup = new Overlay({
+    element: container as any,
+    autoPan: {
+      animation: {
+        duration: 250
+      }
+    }
+  })
+
+  if (closer) {
+    closer.onclick = function () {
+      popup.setPosition(undefined)
+      closer.blur()
+      return false
+    }
+  }
+
   const iconFeature = new Feature({
     geometry: new Point([0, 0]),
     name: 'Null Island',
@@ -46,11 +76,9 @@ function initMap() {
     source: new OSM()
   })
 
-  const mapElement = document.getElementById('map')
-  if (!mapElement) return
-
   const map = new Map({
     layers: [tileLayer, vectorLayer],
+    overlays: [popup],
     target: mapElement,
     view: new View({
       center: [0, 0],
@@ -69,6 +97,11 @@ function initMap() {
     if (!mapTarget) return
     const mapTargetStyle = mapTarget.style
     mapTargetStyle.cursor = hit ? 'pointer' : ''
+  })
+
+  map.on('singleclick', (e: MapBrowserEvent<any>) => {
+    console.log(e.coordinate)
+    popup.setPosition(e.coordinate)
   })
 }
 
