@@ -2,8 +2,12 @@ import { Feature } from 'ol'
 import { Point } from 'ol/geom'
 import { Icon, Style } from 'ol/style.js'
 import imgUrl from '@/assets/icons/point.svg'
+import VectorSource from 'ol/source/Vector.js'
+import { Vector as VectorLayer } from 'ol/layer.js'
+
 export class IconPointer {
   iconFeature
+  layer
 
   constructor(coordX: number, coordY: number) {
     this.iconFeature = new Feature({
@@ -24,5 +28,16 @@ export class IconPointer {
     })
 
     this.iconFeature.setStyle(iconStyle)
+
+    this.layer = this.createNewIconLayer(this.iconFeature)
+  }
+
+  private createNewIconLayer(pointer: Feature) {
+    const vectorSource = new VectorSource({
+      features: [pointer]
+    })
+    return new VectorLayer({
+      source: vectorSource
+    })
   }
 }

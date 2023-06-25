@@ -5,14 +5,14 @@
       {{ popupTitle }}
     </div>
     <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+    <ContextMenu @clear="clearPointers" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, nextTick } from 'vue'
 
 import Map from 'ol/Map.js'
-import VectorSource from 'ol/source/Vector.js'
 import View from 'ol/View.js'
 import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer.js'
 import OSM from 'ol/source/OSM.js'
@@ -22,79 +22,93 @@ import { toStringHDMS } from 'ol/coordinate'
 import { toLonLat } from 'ol/proj'
 import { IconPointer } from '../use/useIconPointer'
 import { Feature } from 'ol'
+import Layer from 'ol/layer/Layer'
 
-const iconFeatures = reactive<Feature[]>([])
+import ContextMenu from '@/components/ContextMenu.vue'
+
 const popupTitle = ref('')
-const iconLayer = ref()
 const popup = ref()
 const tileLayer = ref()
+const removableLayersArray: any = []
+const container = ref<HTMLElement | null>()
+const closer = ref<HTMLElement | null>()
 
-const map = ref()
+const map = ref<Map>()
+const mapElement = ref<HTMLElement | null>(null)
+
+function closePopup() {
+  popup.value.setPosition(undefined)
+  closer.value?.blur()
+  return false
+}
 function createPopupFeature() {
-  const container = document.getElementById('popup')
-  const closer = document.getElementById('popup-closer')
+  container.value = document.getElementById('popup')
+  closer.value = document.getElementById('popup-closer')
 
   popup.value = new Overlay({
-    element: container as any,
+    element: container.value as any,
     autoPan: {
       animation: {
         duration: 250
       }
     }
   })
-
-  if (closer)
-    closer.onclick = function () {
-      popup.value.setPosition(undefined)
-      closer.blur()
-      return false
-    }
-}
-function respawnLayers() {
-  const vectorSource = new VectorSource({
-    features: iconFeatures as Feature[]
-  })
-  iconLayer.value = new VectorLayer({
-    source: vectorSource
-  })
+  if (closer.value) closer.value.onclick = closePopup
 }
 
-function initMap() {
-  const mapElement = document.getElementById('map')
+function clearPointers() {
+  closePopup()
+  if (!map.value) return
+  removableLayersArray.forEach((uid: any) => {
+    console.log(uid)
+    const layerToRemove = map.value
+      ?.getAllLayers()
+      .find((item: any) => item.ol_uid === uid)
+    if (layerToRemove) map.value?.removeLayer(layerToRemove)
+  })
+  removableLayersArray.length = []
+}
+
+function handlePointerInsertion(e: MapBrowserEvent<UIEvent>) {
+  console.log(e.coordinate)
+  const coords = e.coordinate
+  popupTitle.value = toStringHDMS(toLonLat(coords))
+  popup.value.setPosition(e.coordinate)
+  const pointer = new IconPointer(coords[0], coords[1]) as any
+  removableLayersArray.push(pointer.layer.ol_uid)
+  map.value?.addLayer(pointer.layer)
+}
+
+function createMap() {
+  mapElement.value = document.getElementById('map')
   if (!mapElement) return
-
-  createPopupFeature()
-  respawnLayers()
   tileLayer.value = new TileLayer({
     source: new OSM({
       attributions: null as any
     })
   })
   map.value = new Map({
-    layers: [tileLayer.value, iconLayer.value],
+    layers: [tileLayer.value],
     overlays: [popup.value],
-    target: mapElement,
+    target: mapElement.value,
     view: new View({
       center: [0, 0],
       zoom: 3
     })
   })
-
-  map.value.on('singleclick', (e: MapBrowserEvent<any>) => {
-    console.log(e.coordinate)
-    const coords = e.coordinate
-    popupTitle.value = toStringHDMS(toLonLat(coords))
-    popup.value.setPosition(e.coordinate)
-    const pointer = new IconPointer(coords[0], coords[1])
-    iconFeatures.push(pointer.iconFeature)
-    respawnLayers()
-    map.value.addLayer(iconLayer.value)
-  })
+}
+function initMap() {
+  createPopupFeature()
+  createMap()
+  map.value?.on('singleclick', handlePointerInsertion)
 }
 
 onMounted(() => {
   initMap()
 })
+window.onerror = (e) => {
+  console.log(e)
+}
 </script>
 
 <style scoped>
