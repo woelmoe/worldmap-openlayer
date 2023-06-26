@@ -20,6 +20,9 @@ import MapBrowserEvent from 'ol/MapBrowserEvent'
 import Overlay from 'ol/Overlay'
 import { toStringHDMS } from 'ol/coordinate'
 import { toLonLat } from 'ol/proj'
+
+import axios from 'axios'
+
 import { IconPointer } from '../use/useIconPointer'
 
 import ContextMenu from '@/components/ContextMenu.vue'
@@ -94,18 +97,39 @@ function createMap() {
     })
   })
 }
+
+function sendCoordinates(e: MapBrowserEvent<UIEvent>) {
+  if (!map.value) return
+  const coordinates = e.coordinate
+  if (!coordinates) return
+  axios
+    .post('http://127.0.0.1:7000', {
+      latitude: coordinates[0],
+      longitude: coordinates[1],
+      timestamp: Date.now()
+    })
+    .then((response) => {
+      console.log(response)
+    })
+    .catch((error) => {
+      console.log(error)
+    })
+}
+
+function onSingleClick(e: MapBrowserEvent<UIEvent>) {
+  sendCoordinates(e)
+  handlePointerInsertion(e)
+}
+
 function initMap() {
   createPopupFeature()
   createMap()
-  map.value?.on('singleclick', handlePointerInsertion)
+  map.value?.on('singleclick', onSingleClick)
 }
 
 onMounted(() => {
   initMap()
 })
-window.onerror = (e) => {
-  console.log(e)
-}
 </script>
 
 <style scoped>
