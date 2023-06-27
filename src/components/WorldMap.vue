@@ -100,7 +100,8 @@ function createMap() {
 
 function sendCoordinates(e: MapBrowserEvent<UIEvent>) {
   if (!map.value) return
-  const coordinates = e.coordinate
+  // const coordinates = e.coordinate
+  const coordinates = toLonLat(e.coordinate)
   if (!coordinates) return
   axios
     .post('http://127.0.0.1:7000', {
