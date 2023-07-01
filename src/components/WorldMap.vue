@@ -20,22 +20,27 @@ import MapBrowserEvent from 'ol/MapBrowserEvent'
 import Overlay from 'ol/Overlay'
 import { toStringHDMS } from 'ol/coordinate'
 import { toLonLat } from 'ol/proj'
+import { defaults as defaultInteractions } from 'ol/interaction'
 
 import axios from 'axios'
 
-import { IconPointer } from '../use/useIconPointer'
-
+import { IconPointer } from '@/use/useIconPointer'
 import ContextMenu from '@/components/ContextMenu.vue'
 
 const popupTitle = ref('')
 const popup = ref()
 const tileLayer = ref()
-const removableLayersArray: any = []
+const removableLayersArray: IRecord[] = []
 const container = ref<HTMLElement | null>()
 const closer = ref<HTMLElement | null>()
 
 const map = ref<Map>()
 const mapElement = ref<HTMLElement | null>(null)
+
+interface IRecord {
+  recordId: number
+  uid: string
+}
 
 function closePopup() {
   popup.value.setPosition(undefined)
@@ -60,22 +65,42 @@ function createPopupFeature() {
 function clearPointers() {
   closePopup()
   if (!map.value) return
-  removableLayersArray.forEach((uid: any) => {
+  removableLayersArray.forEach((record: any) => {
     const layerToRemove = map.value
       ?.getAllLayers()
-      .find((item: any) => item.ol_uid === uid)
+      .find((item: any) => item.ol_uid === record.uid)
     if (layerToRemove) map.value?.removeLayer(layerToRemove)
   })
-  removableLayersArray.length = []
+  removableLayersArray.length = 0
 }
 
-function handlePointerInsertion(e: MapBrowserEvent<UIEvent>) {
-  console.log(e.coordinate)
+const POINTER_DELETE_TIMER = 5000
+function deletePointerOnTimer(record: IRecord) {
+  if (!map.value) return
+  setTimeout(() => {
+    const layerToRemove = map.value
+      ?.getAllLayers()
+      .find((item: any) => item.ol_uid === record.uid)
+    if (layerToRemove) map.value?.removeLayer(layerToRemove)
+  }, POINTER_DELETE_TIMER)
+}
+
+function showPopup(e: MapBrowserEvent<UIEvent>) {
   const coords = e.coordinate
   popupTitle.value = toStringHDMS(toLonLat(coords))
   popup.value.setPosition(e.coordinate)
+}
+function handlePointerInsertion(e: MapBrowserEvent<UIEvent>) {
+  console.log(e.coordinate)
+  const coords = e.coordinate
   const pointer = new IconPointer(coords[0], coords[1]) as any
-  removableLayersArray.push(pointer.layer.ol_uid)
+  const recordId = Date.now()
+  const record: IRecord = {
+    recordId,
+    uid: pointer.layer.ol_uid
+  }
+  deletePointerOnTimer(record)
+  removableLayersArray.push(record)
   map.value?.addLayer(pointer.layer)
 }
 
@@ -94,6 +119,9 @@ function createMap() {
     view: new View({
       center: [0, 0],
       zoom: 3
+    }),
+    interactions: defaultInteractions({
+      doubleClickZoom: false // Disable double-click zoom
     })
   })
 }
@@ -105,8 +133,8 @@ function sendCoordinates(e: MapBrowserEvent<UIEvent>) {
   if (!coordinates) return
   axios
     .post('http://127.0.0.1:7000', {
-      latitude: coordinates[0],
-      longitude: coordinates[1],
+      longitude: coordinates[0],
+      latitude: coordinates[1],
       timestamp: Date.now()
     })
     .then((response) => {
@@ -118,6 +146,7 @@ function sendCoordinates(e: MapBrowserEvent<UIEvent>) {
 }
 
 function onSingleClick(e: MapBrowserEvent<UIEvent>) {
+  showPopup(e)
   sendCoordinates(e)
   handlePointerInsertion(e)
 }
@@ -125,7 +154,7 @@ function onSingleClick(e: MapBrowserEvent<UIEvent>) {
 function initMap() {
   createPopupFeature()
   createMap()
-  map.value?.on('singleclick', onSingleClick)
+  map.value?.on('dblclick', onSingleClick)
 }
 
 onMounted(() => {
